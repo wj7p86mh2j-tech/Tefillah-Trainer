@@ -58,6 +58,9 @@
   .switch input:checked + .knob { background: #C9A227; }
   .switch input:checked + .knob:before { transform: translateX(20px); }
   body.hide-tr .ph-tr { display: none; }
+  .phrase.tr-off .ph-tr { display: none; }
+  body.hide-tr .phrase.tr-on .ph-tr { display: block; }
+  .phrase { cursor: pointer; }
   .phrase { background: #F6F1E3; color: #1C2333; border-radius: 8px; padding: 14px 18px; margin-bottom: 10px;
     border: 1px solid #E4DCC6; border-left: 4px solid transparent; border-right: 4px solid transparent;
     width: 100%; text-align: left; display: block; }
@@ -359,6 +362,7 @@ function showPrayer(id) {
     '<hr class="rule">' +
     '<div class="trrow"><span>Transliteration</span><label class="switch"><input type="checkbox" id="trtoggle"' + (showTr ? ' checked' : '') + '><span class="knob"></span></label></div>' +
     '<div class="trrow"><span>Focus mode</span><label class="switch"><input type="checkbox" id="fmtoggle"' + (focusSet.has(id) ? ' checked' : '') + '><span class="knob"></span></label></div>' +
+    '<p class="hint">Tap any line to show or hide its transliteration.</p>' +
     '<div id="pbody"></div>';
   if (!audioAvail.has(id)) {
     html += '<p class="hint">The recording for this prayer is coming soon. For now, use it for reading practice.</p>';
@@ -367,7 +371,11 @@ function showPrayer(id) {
   root.innerHTML = html;
   document.body.classList.toggle('hide-tr', !showTr);
   const tt = document.getElementById('trtoggle');
-  if (tt) tt.addEventListener('change', () => { showTr = tt.checked; document.body.classList.toggle('hide-tr', !showTr); });
+  if (tt) tt.addEventListener('change', () => {
+    showTr = tt.checked;
+    document.querySelectorAll('#pbody .phrase').forEach((x) => x.classList.remove('tr-on', 'tr-off'));
+    document.body.classList.toggle('hide-tr', !showTr);
+  });
   const fm = document.getElementById('fmtoggle');
   if (fm) fm.addEventListener('change', () => {
     if (fm.checked) focusSet.add(currentPrayerId); else focusSet.delete(currentPrayerId);
@@ -388,8 +396,14 @@ function showPrayer(id) {
 }
 
 function phraseCardHtml(ph, cls) {
-  return '<div class="phrase' + (cls ? ' ' + cls : '') + '">' +
+  return '<div class="phrase' + (cls ? ' ' + cls : '') + '" role="button" tabindex="0" onclick="toggleLineTr(this)">' +
     '<p class="ph-he">' + ph.he + '</p><p class="ph-tr">' + esc(ph.tr) + '</p></div>';
+}
+
+function toggleLineTr(el) {
+  // Global switch sets the default; tapping a line overrides just that line.
+  if (document.body.classList.contains('hide-tr')) el.classList.toggle('tr-on');
+  else el.classList.toggle('tr-off');
 }
 
 function renderPBody() {
