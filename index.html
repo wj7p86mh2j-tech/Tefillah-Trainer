@@ -111,6 +111,10 @@
   .wheelitem .wname { position: absolute; top: 12px; left: 14px; font-size: 11.5px; color: #5A6379; letter-spacing: 0.5px; }
   .wheelitem .wctrl { position: absolute; top: 8px; right: 10px; display: flex; align-items: center; gap: 7px; }
   .wctrl-lbl { font-size: 9.5px; letter-spacing: 1px; text-transform: uppercase; color: #5A6379; }
+  .finalctrl { display: flex; align-items: center; gap: 5px; background: rgba(169,117,14,0.12);
+    border: 1px solid rgba(169,117,14,0.35); border-radius: 20px; padding: 3px 9px 3px 7px; }
+  .finalctrl .flbl { font-size: 9.5px; letter-spacing: 0.5px; text-transform: uppercase; color: #5A6379; }
+  .finalctrl .fglyph { font-family: 'Frank Ruhl Libre', serif; font-size: 21px; color: #A9750E; line-height: 1; }
   .wheelitem .wctrl .pinbtn { position: static; }
   .switch.sm { width: 36px; height: 20px; }
   .switch.sm .knob:before { width: 14px; height: 14px; left: 2px; top: 2px; }
@@ -438,17 +442,38 @@ function focusStep(d) {
 
 /* ---------- Alef Bet tab ---------- */
 
+// [glyph, sound, name] plus optional [finalGlyph, finalName] for letters
+// that have a final (sofit) form.
 const WHEELS = [
   ["\u05D0","","Alef"],["\u05D1\u05BC","b","Bet"],["\u05D1","v","Vet"],["\u05D2","g","Gimel"],
   ["\u05D3","d","Dalet"],["\u05D4","h","Hei"],["\u05D5","v","Vav"],["\u05D6","z","Zayin"],
   ["\u05D7","ch","Chet"],["\u05D8","t","Tet"],["\u05D9","y","Yod"],["\u05DB\u05BC","k","Kaf"],
-  ["\u05DB","ch","Chaf"],["\u05DC","l","Lamed"],["\u05DE","m","Mem"],["\u05E0","n","Nun"],
-  ["\u05E1","s","Samech"],["\u05E2","","Ayin"],["\u05E4\u05BC","p","Pei"],["\u05E4","f","Fei"],
-  ["\u05E6","tz","Tzadi"],["\u05E7","k","Kof"],["\u05E8","r","Reish"],["\u05E9\u05C1","sh","Shin"],
+  ["\u05DB","ch","Chaf","\u05DA","Final Chaf"],["\u05DC","l","Lamed"],
+  ["\u05DE","m","Mem","\u05DD","Final Mem"],["\u05E0","n","Nun","\u05DF","Final Nun"],
+  ["\u05E1","s","Samech"],["\u05E2","","Ayin"],["\u05E4\u05BC","p","Pei"],
+  ["\u05E4","f","Fei","\u05E3","Final Fei"],
+  ["\u05E6","tz","Tzadi","\u05E5","Final Tzadi"],["\u05E7","k","Kof"],["\u05E8","r","Reish"],["\u05E9\u05C1","sh","Shin"],
   ["\u05E9\u05C2","s","Sin"],["\u05EA","t","Tav"],
 ];
 let wheelPos = WHEELS.map(() => 0);
 let wheelSayOn = WHEELS.map(() => true);
+let wheelFinal = WHEELS.map(() => false); // false = regular form, true = final form
+
+// Helpers: a wheel has a final form when the row carries a 4th entry.
+function wheelHasFinal(i) { return WHEELS[i].length > 3; }
+function wheelGlyph(i) { return wheelFinal[i] ? WHEELS[i][3] : WHEELS[i][0]; }
+function wheelAltGlyph(i) { return wheelFinal[i] ? WHEELS[i][0] : WHEELS[i][3]; }
+function wheelName(i) { return wheelFinal[i] ? WHEELS[i][4] : WHEELS[i][2]; }
+
+function toggleWheelFinal(i, v) {
+  wheelFinal[i] = v;
+  const wrap = document.getElementById('wh' + i);
+  if (!wrap) return;
+  const tmp = document.createElement('div');
+  tmp.innerHTML = wheelItemHtml(i);
+  wrap.replaceWith(tmp.firstChild);
+  wireOneWheel(i);
+}
 function toggleWheelSay(i, v) {
   wheelSayOn[i] = v;
   const el = document.getElementById('wh' + i);
@@ -567,20 +592,24 @@ function wheelSay(i) {
 }
 
 function wheelItemHtml(i) {
-  const [lg, lc, ln] = WHEELS[i];
   const [vm, vs, vn] = WHEEL_VOWELS[wheelPos[i]];
   let ticksHtml = '';
   WGEOM.ticks.forEach(([x, y], vi) => {
     ticksHtml += '<g class="wtick' + (vi === wheelPos[i] ? ' on' : '') + '" data-v="' + vi + '">' +
       '<text x="' + x + '" y="' + (y + 15) + '" text-anchor="middle">' + wheelVowelLabel(WHEEL_VOWELS[vi]) + '</text></g>';
   });
+  const finalCtrl = wheelHasFinal(i)
+    ? '<span class="finalctrl"><span class="flbl">reg</span>' +
+      '<label class="switch sm" title="Switch between the regular and final form"><input type="checkbox"' + (wheelFinal[i] ? ' checked' : '') + ' onchange="toggleWheelFinal(' + i + ', this.checked)"><span class="knob"></span></label>' +
+      '<span class="flbl">final</span><span class="fglyph">' + wheelAltGlyph(i) + '</span></span>'
+    : '';
   return '<div class="wheelitem' + (wheelSayOn[i] ? '' : ' nosay') + '" id="wh' + i + '">' +
-    '<span class="wname" id="whn' + i + '">' + ln + ' + ' + vn + '</span>' +
-    '<span class="wctrl">' +
+    '<span class="wname" id="whn' + i + '">' + wheelName(i) + ' + ' + vn + '</span>' +
+    '<span class="wctrl">' + finalCtrl +
     '<span class="wctrl-lbl">transliteration</span><label class="switch sm" title="Turns the phonetic pronunciation on and off"><input type="checkbox"' + (wheelSayOn[i] ? ' checked' : '') + ' onchange="toggleWheelSay(' + i + ', this.checked)"><span class="knob"></span></label>' +
     '<button class="pinbtn' + (wheelPins.has(i) ? ' on' : '') + '" title="Pin" aria-label="Pin" onclick="toggleWheelPin(event,' + i + ')">' + ICON_PIN + '</button>' +
     '</span>' +
-    '<div class="wcol"><span class="wsyll" id="whs' + i + '">' + (lg + vm) + '</span></div>' +
+    '<div class="wcol"><span class="wsyll" id="whs' + i + '">' + (wheelGlyph(i) + vm) + '</span></div>' +
     '<svg class="warc" viewBox="0 40 360 200" data-i="' + i + '">' +
     '<path d="' + WGEOM.d + '"></path>' + WGEOM.arrows + ticksHtml +
     '<text class="wsayarc" id="whp' + i + '" x="180" y="126" text-anchor="middle">&ldquo;' + wheelSay(i) + '&rdquo;</text>' +
@@ -588,38 +617,42 @@ function wheelItemHtml(i) {
 }
 
 function updateWheelDisplay(i) {
-  const [lg, lc, ln] = WHEELS[i];
   const [vm, vs, vn] = WHEEL_VOWELS[wheelPos[i]];
   const s = document.getElementById('whs' + i);
   const n = document.getElementById('whn' + i);
   const p = document.getElementById('whp' + i);
-  if (s) s.textContent = lg + vm;
-  if (n) n.textContent = ln + ' + ' + vn;
+  if (s) s.textContent = wheelGlyph(i) + vm;
+  if (n) n.textContent = wheelName(i) + ' + ' + vn;
   if (p) p.textContent = '\u201C' + wheelSay(i) + '\u201D';
   document.querySelectorAll('#wh' + i + ' .wtick').forEach((g) => {
     g.classList.toggle('on', parseInt(g.dataset.v, 10) === wheelPos[i]);
   });
 }
 
+function wireOneWheel(i) {
+  const svg = document.querySelector('#wh' + i + ' .warc');
+  if (!svg) return;
+  const handle = (e) => {
+    if (e.pointerType === 'mouse' && e.buttons === 0) return;
+    if (e.cancelable) e.preventDefault();
+    const rect = svg.getBoundingClientRect();
+    const px = (e.clientX - rect.left) * (360 / rect.width);
+    const py = 40 + (e.clientY - rect.top) * (200 / rect.height);
+    let deg = Math.atan2(py + 2, px - 180) * 180 / Math.PI;
+    if (deg < 0) deg = deg < -90 ? 152 : 28;
+    deg = Math.max(28, Math.min(152, deg));
+    const idx = Math.round((deg - 28) / ((152 - 28) / (WHEEL_VOWELS.length - 1)));
+    if (idx !== wheelPos[i]) { wheelPos[i] = idx; updateWheelDisplay(i); }
+  };
+  svg.addEventListener('pointerdown', handle);
+  svg.addEventListener('pointermove', handle);
+  svg.addEventListener('touchstart', (e) => e.preventDefault(), { passive: false });
+  svg.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
+}
+
 function wireWheels() {
   document.querySelectorAll('.warc').forEach((svg) => {
-    const i = parseInt(svg.dataset.i, 10);
-    const handle = (e) => {
-      if (e.pointerType === 'mouse' && e.buttons === 0) return;
-      if (e.cancelable) e.preventDefault();
-      const rect = svg.getBoundingClientRect();
-      const px = (e.clientX - rect.left) * (360 / rect.width);
-      const py = 40 + (e.clientY - rect.top) * (200 / rect.height);
-      let deg = Math.atan2(py + 2, px - 180) * 180 / Math.PI;
-      if (deg < 0) deg = deg < -90 ? 152 : 28;
-      deg = Math.max(28, Math.min(152, deg));
-      const idx = Math.round((deg - 28) / ((152 - 28) / (WHEEL_VOWELS.length - 1)));
-      if (idx !== wheelPos[i]) { wheelPos[i] = idx; updateWheelDisplay(i); }
-    };
-    svg.addEventListener('pointerdown', handle);
-    svg.addEventListener('pointermove', handle);
-    svg.addEventListener('touchstart', (e) => e.preventDefault(), { passive: false });
-    svg.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
+    wireOneWheel(parseInt(svg.dataset.i, 10));
   });
 }
 
