@@ -108,13 +108,21 @@
     border-radius: 10px; padding: 14px 44px 14px 16px; margin-bottom: 12px; }
   .wheelitem .wcol { display: flex; flex-direction: column; align-items: center; text-align: center; pointer-events: none; }
   .wheelitem .wsyll { font-family: 'Frank Ruhl Libre', serif; font-size: 150px; line-height: 1.0; margin-bottom: -38px; position: relative; z-index: 2; }
-  .wheelitem .wname { position: absolute; top: 12px; left: 14px; font-size: 11.5px; color: #5A6379; letter-spacing: 0.5px; }
-  .wheelitem .wctrl { position: absolute; top: 8px; right: 10px; display: flex; align-items: center; gap: 7px; }
+  .wheelitem .wname { position: absolute; top: 12px; left: 14px; font-size: 11.5px; color: #5A6379; letter-spacing: 0.5px;
+    max-width: 42%; line-height: 1.45; }
+  .wheelitem .wname .wn-letter { display: block; font-weight: 600; color: #4A4234; }
+  .wheelitem .wname .wn-vowel { display: block; font-size: 10.5px; color: #7A8296; }
+  .wheelitem .wctrl { position: absolute; top: 8px; right: 10px; display: flex; flex-direction: column;
+    align-items: flex-end; gap: 5px; }
+  .wctrl-row { display: flex; align-items: center; gap: 7px; }
   .wctrl-lbl { font-size: 9.5px; letter-spacing: 1px; text-transform: uppercase; color: #5A6379; }
-  .finalctrl { display: flex; align-items: center; gap: 5px; background: rgba(169,117,14,0.12);
-    border: 1px solid rgba(169,117,14,0.35); border-radius: 20px; padding: 3px 9px 3px 7px; }
-  .finalctrl .flbl { font-size: 9.5px; letter-spacing: 0.5px; text-transform: uppercase; color: #5A6379; }
-  .finalctrl .fglyph { font-family: 'Frank Ruhl Libre', serif; font-size: 21px; color: #A9750E; line-height: 1; }
+  .finalctrl { display: flex; align-items: center; gap: 6px; background: rgba(169,117,14,0.12);
+    border: 1px solid rgba(169,117,14,0.35); border-radius: 20px; padding: 2px 8px 2px 9px; }
+  .finalctrl .flbl { font-size: 9px; letter-spacing: 0.8px; text-transform: uppercase; color: #5A6379; }
+  .finalctrl .fglyph { font-family: 'Frank Ruhl Libre', serif; font-size: 19px; color: #A9750E; line-height: 1;
+    min-width: 15px; text-align: center; }
+  /* cards that carry the extra final row need a little more headroom */
+  .wheelitem.hasfinal .wsyll { margin-top: 16px; }
   .wheelitem .wctrl .pinbtn { position: static; }
   .switch.sm { width: 36px; height: 20px; }
   .switch.sm .knob:before { width: 14px; height: 14px; left: 2px; top: 2px; }
@@ -603,11 +611,13 @@ function wheelItemHtml(i) {
       '<label class="switch sm" title="Switch between the regular and final form"><input type="checkbox"' + (wheelFinal[i] ? ' checked' : '') + ' onchange="toggleWheelFinal(' + i + ', this.checked)"><span class="knob"></span></label>' +
       '<span class="flbl">final</span><span class="fglyph">' + wheelAltGlyph(i) + '</span></span>'
     : '';
-  return '<div class="wheelitem' + (wheelSayOn[i] ? '' : ' nosay') + '" id="wh' + i + '">' +
-    '<span class="wname" id="whn' + i + '">' + wheelName(i) + ' + ' + vn + '</span>' +
-    '<span class="wctrl">' + finalCtrl +
+  return '<div class="wheelitem' + (wheelSayOn[i] ? '' : ' nosay') + (wheelHasFinal(i) ? ' hasfinal' : '') + '" id="wh' + i + '">' +
+    '<span class="wname" id="whn' + i + '"><span class="wn-letter">' + wheelName(i) + '</span><span class="wn-vowel">' + vn + '</span></span>' +
+    '<span class="wctrl">' +
+    '<span class="wctrl-row">' +
     '<span class="wctrl-lbl">transliteration</span><label class="switch sm" title="Turns the phonetic pronunciation on and off"><input type="checkbox"' + (wheelSayOn[i] ? ' checked' : '') + ' onchange="toggleWheelSay(' + i + ', this.checked)"><span class="knob"></span></label>' +
     '<button class="pinbtn' + (wheelPins.has(i) ? ' on' : '') + '" title="Pin" aria-label="Pin" onclick="toggleWheelPin(event,' + i + ')">' + ICON_PIN + '</button>' +
+    '</span>' + finalCtrl +
     '</span>' +
     '<div class="wcol"><span class="wsyll" id="whs' + i + '">' + (wheelGlyph(i) + vm) + '</span></div>' +
     '<svg class="warc" viewBox="0 40 360 200" data-i="' + i + '">' +
@@ -622,7 +632,7 @@ function updateWheelDisplay(i) {
   const n = document.getElementById('whn' + i);
   const p = document.getElementById('whp' + i);
   if (s) s.textContent = wheelGlyph(i) + vm;
-  if (n) n.textContent = wheelName(i) + ' + ' + vn;
+  if (n) n.innerHTML = '<span class="wn-letter">' + wheelName(i) + '</span><span class="wn-vowel">' + vn + '</span>';
   if (p) p.textContent = '\u201C' + wheelSay(i) + '\u201D';
   document.querySelectorAll('#wh' + i + ' .wtick').forEach((g) => {
     g.classList.toggle('on', parseInt(g.dataset.v, 10) === wheelPos[i]);
